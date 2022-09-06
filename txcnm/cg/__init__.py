@@ -10,23 +10,31 @@ from subprocess import Popen
 
 
 
-
-
 #不要随便把print改成log，因为要读log
-#写的代码后面自己都不知道是啥了呜呜呜
+#没学过python，面向复制粘贴编程，写的太丑别骂了别骂了
+#欢迎大佬优化代码，感觉if还是太多了
+#整体思路   1.config.yml下填写qq和gocq路径path,   hoshino开启时加载进程session1->启动任务readlog
+#           2.获取gocq和路径->获取当前qq->没问题进入循环
+#            3.开始读日志，在循环，以下为循环内容
+#             4.获取路径文件名，如果和上次循环的不同视为自己主动切号了，重载日志
+#              5.利用日志指针，在读取完初始日志后实时读取最后一条消息，最后一条为冻结则切号，刷新日志时风控超过数量切号
 sv = Service("冻结自动切号", use_priv=priv.SU, manage_priv=priv.SU, visible=False)
 bot = get_bot()
-session = None
-filename=''
-last_filename=''
+session1 = None                 #本进程初始化
+filename=''                    #文件名
+last_filename=''               #上次读取的文件名，不同则视为切号
 file_size_flag = 0             #文件大小指针
 file_cursor_flag = 0           #上次读取的指针位置
 message_blocked_flag = 99      #风控计数器
-message_blocked_lock=0       
+message_blocked_lock=0         #确认风控计数器只运行一次
 account_flag=0                 #识别账号是否切换，为什么切换 0：未知，可能是后台自己切的 1：风控/冻结自动切的 2：使用切换账号指令切的
-message_blocked_set=10         #风控计数上限
 last_line_flag = ""            #log最后一行的内容
 qqlist=[]                      #用于缓存正在使用和已切换的qq
+qq_original=0                    #缓存上一次读日志时的qq
+
+#########################以上除非看得懂不要乱动，以下随便乱动############################
+time_refresh=15               #刷新日志的间隔时间，默认60s刷新一次，当然10s,600s也不是不行，看你服务器和是否需要马上切号
+message_blocked_set=10         #风控计数上限，当前还在猜想风控是否是仅发图发不出（需要有人提供这种情况的日志），所以累计10次发不出再切
 
 file_config = os.path.join(os.path.dirname(__file__),f"config.yml") 
 def config_test(file_config):
@@ -36,7 +44,7 @@ def config_test(file_config):
 @bot.on_startup
 async def start_readlog():
     global session1
-    sv.logger.info(f"冻结自动换号程序已开启")         #等待程序加载完ws接上，不然查不到登录信息，虽然会循环查，但是看着
+    sv.logger.info(f"冻结自动换号程序已开启")       
     loop = asyncio.get_event_loop()
     session1 = loop.create_task(readlog())
 
@@ -49,7 +57,6 @@ async def readlog():
             break
         try:
             qqid = (await bot.get_login_info())['user_id']           #获取当前qq
-            print('ttttttttttttttttttttttttttttttttttttt')
             qqlist.append(qqid)
         except Exception as e:
             await asyncio.sleep(5)
@@ -73,19 +80,20 @@ async def get_last_log(accounts,qqid,filename):
     global message_blocked_lock
     global last_filename
     global account_flag
+    global qq_original
    
     while True:
         try:
             # 获取文件大小
-            qq_original=qqid
             qqid = (await bot.get_login_info())['user_id']             
             filename=await get_filename(qqid,accounts)             
             if last_filename=='':
                last_filename=filename
             if last_filename!=filename:
-               if account_flag==0:
+               if qq_original!=qqid and account_flag==0:
                   #print(f'原账号{qq_original}因后台切换，现已切换至qq{qqid}')
                   await report_to_su(f'原账号{qq_original}因后台切换，现已切换至qq{qqid}')
+               await initialization()
             if account_flag==1:
                   #print(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
                   account_flag=0
@@ -136,7 +144,8 @@ async def get_last_log(accounts,qqid,filename):
               await huanhao(accounts,qqid)
               break
         #print(message_blocked_flag)
-        await asyncio.sleep(60)               #60s开始刷新新日志，可以随意缩短
+        qq_original=qqid
+        await asyncio.sleep(time_refresh)               #60s开始刷新新日志，可以随意缩短
 
 
 async def get_filename(qqid,accounts):
@@ -189,6 +198,10 @@ async def huanhao(accounts,qq_original):
       print(f'qqlist{qqlist}')
       c=set(c) ^ set(qqlist)
       c=list(c)
+      if c==[]:
+        sv.logger.info(f"账号已不足切换，保持原状")
+        await asyncio.sleep(7200)                  #没号切不了了，进程开摆，有号就重载吧
+        return
       qqid=c[0]
       account_flag=1
     else:
@@ -219,7 +232,7 @@ async def zhanghao_list(bot, ev):
     for account in accounts:
             qq=account['qq']
             msg+=str(qq)+'\n'
-    msg+='已用账号如下：\n'
+    msg+='已用账号如下，已用过的不会进入自动换号列表\n如已解除冻结风控，请激活账号\n'
     for qqid in qqlist:
            msg+=str(qqid)+'\n'
     qqid = (await bot.get_login_info())['user_id'] 
@@ -259,11 +272,15 @@ async def change_zhanghao(bot, ev: CQEvent):
            qqlist.remove(args)
            await bot.send(ev, '{args}已激活，将进入自动切号列表')
 
-@sucmd("reload-session1", force_private=False, aliases=("重启切号", "重载切号"))#不知道有啥用
+@sucmd("reload-session1", force_private=False, aliases=("重启切号", "重载切号"))#完全重载，记录清除
 async def reload_session1(session: CommandSession):
+    global qq_original
+    global qqlist
     try:
         session1.cancel()
         await initialization()
+        qqlist=[]                    
+        qq_original=0 
         await start_readlog()
         await session.send("重载已完成")
     except Exception as e:

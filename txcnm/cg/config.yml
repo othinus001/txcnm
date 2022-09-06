@@ -1,5 +1,6 @@
-﻿list:
- - qq: 1575998773
-   path: C:\Users\12802\Desktop\1575998773
- - qq: 1590791953
-   path: C:\Users\12802\Desktop\12345678
+﻿#请注意path不要有空格
+list:
+ - qq: 111111111
+   path: C:\Users\12802\Desktop\111111111
+ - qq: 222222222
+   path: C:\Users\12802\Desktop\222222222
