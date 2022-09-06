@@ -33,7 +33,7 @@
 
 # 安装方法：  
 1.复制整个文件夹放进modules，路径为\modules\txcnm\cg\_init_.py,填写config.yml,照格式添加    
-2.pip install yaml  
+2.pip install pyyaml  
 3.bot设置加入txcnm  
 安装实在是太简单了，很符合我对未来生活的想象，科技并带着偷懒。
 # 温馨提示：
