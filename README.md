@@ -39,5 +39,5 @@
 # 温馨提示：
 如果是冻结一般都会直接告诉你能不能解  
 如果是群消息被屏蔽的状态：
-用机器人查询地址：https://accounts.qq.com/safe/message/unlock?lock_info=5_1
+用机器人查询地址：https://accounts.qq.com/safe/message/unlock?lock_info=5_1  
 最后一个数字1-5都试一遍，有可能能直接解除
