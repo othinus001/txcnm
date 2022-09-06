@@ -36,3 +36,8 @@
 2.pip install yaml  
 3.bot设置加入txcnm  
 安装实在是太简单了，很符合我对未来生活的想象，科技并带着偷懒。
+# 温馨提示：
+如果是冻结一般都会直接告诉你能不能解  
+如果是群消息被屏蔽的状态：
+用机器人查询地址：https://accounts.qq.com/safe/message/unlock?lock_info=5_1
+最后一个数字1-5都试一遍，有可能能直接解除
