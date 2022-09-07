@@ -35,8 +35,8 @@
 # 安装方法：  
 1.复制整个文件夹放进modules，路径为\modules\txcnm\cg\\_init_.py  
 2.填写config.yml,照格式添加，需包括当前使用的账号，path下需要有go-cqhttp.bat和logs文件夹  
-2.pip install pyyaml    
-3.bot设置加入txcnm    
+3.pip install pyyaml    
+4.bot设置加入txcnm    
 安装实在是太简单了，很符合我对未来生活的想象，科技并带着偷懒。
 # 可能的问题：
 Q：当前账号需要填第一个吗？  
