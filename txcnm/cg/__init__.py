@@ -232,12 +232,13 @@ async def zhanghao_list(bot, ev):
     for account in accounts:
             qq=account['qq']
             msg+=str(qq)+'\n'
-    msg+='已用账号如下，已用过的不会进入自动换号列表\n如已解除冻结风控，请激活账号\n'
+    msg+='已用账号如下\n'
     for qqid in qqlist:
            msg+=str(qqid)+'\n'
     qqid = (await bot.get_login_info())['user_id'] 
-    msg+='当前账号为'+str(qqid)
+    msg+='已用过的不会进入自动换号列表\n如已解除冻结风控，请激活账号\n当前账号为'+str(qqid)
     await bot.send(ev, msg)
+
 
 def check_exist(my_list, key):
     for n in my_list:
