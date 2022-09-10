@@ -35,6 +35,7 @@ qq_original=0                    #缓存上一次读日志时的qq
 #########################以上除非看得懂不要乱动，以下随便乱动############################
 time_refresh=120               #刷新日志的间隔时间，默认120s刷新一次，当然10s,600s也不是不行，看你服务器和是否需要马上切号
 message_blocked_set=10         #风控计数上限，当前还在猜想风控是否是仅发图发不出（需要有人提供这种情况的日志），所以累计10次发不出再切
+go_cqhttp_name='go-cqhttp.exe' #
 
 file_config = os.path.join(os.path.dirname(__file__),f"config.yml") 
 def config_test(file_config):
@@ -217,7 +218,7 @@ async def huanhao(accounts,qq_original):
     sv.logger.info(f"账号即将切为{qqid}")
     sv.logger.info(f"gocq即将切为路径{path}")
     try:
-      os.system('taskkill /f /im go-cqhttp.exe')
+      os.system(f'taskkill /f /im {go_cqhttp_name}')
       Popen(f"{path}\\go-cqhttp.bat",cwd=f"{path}")
       session1.cancel()
       await initialization()
