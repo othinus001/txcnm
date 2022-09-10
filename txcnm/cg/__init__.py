@@ -33,7 +33,7 @@ qqlist=[]                      #用于缓存正在使用和已切换的qq
 qq_original=0                    #缓存上一次读日志时的qq
 
 #########################以上除非看得懂不要乱动，以下随便乱动############################
-time_refresh=120               #刷新日志的间隔时间，默认120s刷新一次，当然10s,600s也不是不行，看你服务器和是否需要马上切号
+time_refresh=15               #刷新日志的间隔时间，默认120s刷新一次，当然10s,600s也不是不行，看你服务器和是否需要马上切号
 message_blocked_set=10         #风控计数上限，当前还在猜想风控是否是仅发图发不出（需要有人提供这种情况的日志），所以累计10次发不出再切
 
 file_config = os.path.join(os.path.dirname(__file__),f"config.yml") 
@@ -57,7 +57,8 @@ async def readlog():
             break
         try:
             qqid = (await bot.get_login_info())['user_id']           #获取当前qq
-            qqlist.append(qqid)
+            if qqid not in qqlist:
+               qqlist.append(qqid)
         except Exception as e:
             await asyncio.sleep(5)
             continue
@@ -86,7 +87,7 @@ async def get_last_log(accounts,qqid,filename):
         try:
             # 获取文件大小
             qqid = (await bot.get_login_info())['user_id']             
-            filename=await get_filename(qqid,accounts)             
+            filename=await get_filename(qqid,accounts)            
             if last_filename=='':
                last_filename=filename
             if last_filename!=filename:
@@ -94,6 +95,8 @@ async def get_last_log(accounts,qqid,filename):
                   #print(f'原账号{qq_original}因后台切换，现已切换至qq{qqid}')
                   await report_to_su(f'原账号{qq_original}因后台切换，现已切换至qq{qqid}')
                await initialization()
+               if qqid not in qqlist:
+                  qqlist.append(qqid)
             if account_flag==1:
                   #print(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
                   account_flag=0
@@ -110,6 +113,7 @@ async def get_last_log(accounts,qqid,filename):
                       return
         except Exception as ret:
             print("错误：", str(ret))
+            # await asyncio.sleep(300)
             break
         file_size = os.path.getsize(filename)
         if file_size > file_size_flag:
@@ -195,9 +199,10 @@ async def huanhao(accounts,qq_original):
     if type(accounts)==list:
       for account in accounts:
           c.append(account['qq'])
-      print(f'qqlist{qqlist}')
+      print(f'qqlist为{qqlist}')
       c=set(c) ^ set(qqlist)
       c=list(c)
+      #print(f'cccccccccccccc为{c}')
       if c==[]:
         sv.logger.info(f"账号已不足切换，保持原状")
         await asyncio.sleep(7200)                  #没号切不了了，进程开摆，有号就重载吧
@@ -238,7 +243,6 @@ async def zhanghao_list(bot, ev):
     qqid = (await bot.get_login_info())['user_id'] 
     msg+='已用过的不会进入自动换号列表\n如已解除冻结风控，请激活账号\n当前账号为'+str(qqid)
     await bot.send(ev, msg)
-
 
 def check_exist(my_list, key):
     for n in my_list:
