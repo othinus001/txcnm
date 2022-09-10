@@ -36,7 +36,7 @@
 # 安装方法：  
 1.复制整个文件夹放进modules，路径为\modules\txcnm\cg\\_init_.py  
 2.填写config.yml,照格式添加，需包括当前使用的账号，path下需要有go-cqhttp.bat和logs文件夹  
-3.请确认path下的.exe名字，本项目默认名字为go-cqhttp.exe(有的人下载新版本没删go-cqhttp后面的），改了点bat运行不了看下面答疑，如果你死活不想改也没关系看看py可以设置
+3.请确认path下的.exe名字，本项目默认名字为go-cqhttp.exe(有的人下载新版本没删go-cqhttp后面的），改了点bat运行不了看下面答疑，如果你死活不想改也没关系看看py可以设置  
 4.pip install pyyaml    
 5.bot设置加入txcnm    
 安装实在是太简单了，很符合我对未来生活的想象，科技并带着偷懒。
