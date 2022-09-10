@@ -36,8 +36,9 @@
 # 安装方法：  
 1.复制整个文件夹放进modules，路径为\modules\txcnm\cg\\_init_.py  
 2.填写config.yml,照格式添加，需包括当前使用的账号，path下需要有go-cqhttp.bat和logs文件夹  
-3.pip install pyyaml    
-4.bot设置加入txcnm    
+3.请确认path下的.exe名字，本项目默认名字为go-cqhttp.exe(有的人下载新版本没删go-cqhttp后面的），改了点bat运行不了看下面答疑，如果你死活不想改也没关系看看py可以设置
+4.pip install pyyaml    
+5.bot设置加入txcnm    
 安装实在是太简单了，很符合我对未来生活的想象，科技并带着偷懒。
 # 可能的问题：
 Q：当前账号需要填第一个吗？  
@@ -49,6 +50,8 @@ A：虽然可以超时判断但感觉没必要，所以开摆，欢迎pr
 Q：刷新日志时间还是太慢了？  
 A：py里有可以设置的时间，原120s改成10s也行  
    因为指针读取，内存占用其实不大，不过时间太短的建议给设了令牌桶的+1
+Q：我exe改名go-cqhttp.exe以后bat运行不了了？  
+A：你可以用记事本打开bat看看文件名，要确保 bat里的名，.exe名，py里的设置名（默认go-cqhttp.exe）三个必须一致
 
 # 温馨提示：
 如果是冻结一般都会直接告诉你能不能解  
