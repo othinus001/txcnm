@@ -276,7 +276,7 @@ async def change_zhanghao(bot, ev: CQEvent):
            await bot.send(ev, '当前账号正在使用中，无需激活')
         else:
            qqlist.remove(args)
-           await bot.send(ev, '{args}已激活，将进入自动切号列表')
+           await bot.send(ev, f'{args}已激活，将进入自动切号列表')
 
 @sucmd("reload-session1", force_private=False, aliases=("重启切号", "重载切号"))#完全重载，记录清除
 async def reload_session1(session: CommandSession):
