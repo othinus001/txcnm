@@ -304,7 +304,7 @@ async def reload_session1(session: CommandSession):
 
 @sv.on_suffix(('账号列表','帐号列表'))
 async def list_help(bot, ev):
-    image = Image.open(os.path.join(os.path.dirname(__file__),f"list.png")).convert('RGB')
+    image = Image.open(os.path.join(os.path.dirname(__file__),f"list.png")).convert('RGBA')
     draw= ImageDraw.Draw(image) #建立一个绘图的对象
     font = ImageFont.truetype(os.path.join(os.path.dirname(__file__),f"081.ttf"), 85)
     font2 = ImageFont.truetype(os.path.join(os.path.dirname(__file__),f"081.ttf"), 70)
@@ -333,27 +333,33 @@ async def list_help(bot, ev):
               rs, g, b, a = qq_img.split()
            text1=str(account['qq'])
            if account['qq'] in qqlist and account['qq']!=qqid_now:
-              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:
+                image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+                drawRect(image, (697,692+278*n,1007,904+278*n), fill=(255,255,255,150))
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#d9526b')#红
               draw.text((138,752+278*n), '已用', font=font2, fill="#ffffff") 
               draw.text((340,715+278*n), text1, font=font, fill="#d9526b") 
               draw.text((340,800+278*n), name, font=font2, fill="#000000") 
            elif account['qq'] == qqid_now:
-              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:
+                image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+                drawRect(image, (697,692+278*n,1007,904+278*n), fill=(255,255,255,150))
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#359ee8')#蓝
               draw.text((138,752+278*n), '当前', font=font2, fill="#ffffff")
               draw.text((340,715+278*n), text1, font=font, fill="#359ee8") 
               draw.text((340,800+278*n), name, font=font2, fill="#000000") 
            else:
-              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:
+                image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+                drawRect(image, (697,692+278*n,1007,904+278*n), fill=(255,255,255,150))
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#27cb93')#绿
               draw.text((138,752+278*n), '可用', font=font2, fill="#ffffff") 
               draw.text((340,715+278*n), text1, font=font, fill="#27cb93") 
               draw.text((340,800+278*n), name, font=font2, fill="#000000") 
 
            n+=1
-    image.save(os.path.join(os.path.dirname(__file__),f"list2.jpg"))
-    list2=os.path.join(os.path.dirname(__file__),f"list2.jpg")
+    image.save(os.path.join(os.path.dirname(__file__),f"list2.png"))
+    list2=os.path.join(os.path.dirname(__file__),f"list2.png")
     await bot.send(ev, CommandSession.image(f'file:///{list2}'))
 
 
@@ -400,7 +406,7 @@ class DownloadError(Exception):
 async def qqimg(bg,mask):
     x, y = 0, 0
     bg = to_image(bg)# 背景图
-    bg = bg.resize((450, 212))
+    bg = bg.resize((450, 212)).convert('RGBA')
     mask_size = mask.size 
     crop = bg.crop((x, y, x + mask_size[0], y + mask_size[1]))
     m2 = Image.new('RGBA', mask.size) 
@@ -420,3 +426,10 @@ def to_jpg(frame: Image, bg_color=(255, 255, 255)) -> Image:
         return bg
     else:
         return frame.convert("RGB")
+    
+def drawRect(img, pos, **kwargs):
+    transp = Image.new('RGBA', img.size, (0,0,0,0))
+    draw = ImageDraw.Draw(transp, "RGBA")
+    draw.rectangle(pos, **kwargs)
+    img.paste(Image.alpha_composite(img, transp))
+
