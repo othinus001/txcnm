@@ -106,12 +106,10 @@ async def get_last_log(accounts,qqid,filename):
             if account_flag==1:
                   #print(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
                   account_flag=0
-                  await asyncio.sleep(10)
                   await report_to_su(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
             if account_flag==2:
                   #print(f'原账号{qq_original}已主动切换至qq{qqid}')
                   account_flag=0
-                  await asyncio.sleep(10)
                   await report_to_su(f'原账号{qq_original}已主动切换至qq{qqid}')
             while os.path.isfile(filename)!=True:             #如果过了一天，gocq没有新消息是不会出新的log的
                    sv.logger.info(f"尝试更新今天的日志")
@@ -228,6 +226,7 @@ async def huanhao(accounts,qq_original):
       os.system(f'taskkill /f /im {go_cqhttp_name}')
       Popen(f"{path}\\go-cqhttp.bat",cwd=f"{path}")
       session1.cancel()
+      await asyncio.sleep(15)#等一下新cq加载
       await initialization()
       await start_readlog()
     except Exception as e:
