@@ -2,11 +2,16 @@ import asyncio
 import random
 import os
 from time import strftime,localtime 
-from hoshino import Service, priv, sucmd, get_bot
+from hoshino import Service, priv, sucmd, get_bot,HoshinoBot
 from hoshino.typing import MessageSegment as CommandSession,CQEvent
 from hoshino.config import SUPERUSERS
+import hashlib
 import yaml
 from subprocess import Popen
+from PIL import Image, ImageDraw, ImageFont
+from aiocache import cached
+import httpx
+from io import BytesIO
 
 
 
@@ -101,10 +106,12 @@ async def get_last_log(accounts,qqid,filename):
             if account_flag==1:
                   #print(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
                   account_flag=0
+                  await asyncio.sleep(30)
                   await report_to_su(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
             if account_flag==2:
                   #print(f'原账号{qq_original}已主动切换至qq{qqid}')
                   account_flag=0
+                  await asyncio.sleep(30)
                   await report_to_su(f'原账号{qq_original}已主动切换至qq{qqid}')
             while os.path.isfile(filename)!=True:             #如果过了一天，gocq没有新消息是不会出新的log的
                    sv.logger.info(f"尝试更新今天的日志")
@@ -231,19 +238,7 @@ async def huanhao(accounts,qq_original):
 
 sv.scheduled_job('cron', hour=3, jitter=300)(zero_clear)
 
-@sv.on_fullmatch(('帐号列表','账号列表'))
-async def zhanghao_list(bot, ev):
-    msg='账号列表如下：\n'
-    accounts = config_test(file_config).get('list') 
-    for account in accounts:
-            qq=account['qq']
-            msg+=str(qq)+'\n'
-    msg+='已用账号如下\n'
-    for qqid in qqlist:
-           msg+=str(qqid)+'\n'
-    qqid = (await bot.get_login_info())['user_id'] 
-    msg+='已用过的不会进入自动换号列表\n如已解除冻结风控，请激活账号\n当前账号为'+str(qqid)
-    await bot.send(ev, msg)
+
 
 def check_exist(my_list, key):
     for n in my_list:
@@ -256,7 +251,21 @@ def find_path(my_list, key):
         if key in n.values():
            return n['path']
 
-@sv.on_prefix(('切换账号','切换帐号'))
+@sv.on_prefix(('移除账号','移除帐号'),only_to_me=True)
+async def yichu_zhanghao(bot, ev: CQEvent):
+    args = ev.message.extract_plain_text()
+    args = int(args)
+    accounts = config_test(file_config).get('list')
+    check=check_exist(accounts,args)
+    if check: 
+       if args in qqlist: 
+          await bot.send(ev, f'{args}已在已用列表之中')
+       else:
+          qqlist.append(args)
+          await bot.send(ev, f'已将{args}移入已用列表,不会进入待切号序列')
+          
+
+@sv.on_prefix(('切换账号','切换帐号'),only_to_me=True)
 async def change_zhanghao(bot, ev: CQEvent):
     args = ev.message.extract_plain_text()
     args = int(args)
@@ -266,8 +275,8 @@ async def change_zhanghao(bot, ev: CQEvent):
        qq_original = (await bot.get_login_info())['user_id'] 
        await huanhao(args,qq_original)
 
-@sv.on_prefix(('激活账号','激活帐号'))
-async def change_zhanghao(bot, ev: CQEvent):
+@sv.on_prefix(('激活账号','激活帐号'),only_to_me=True)
+async def jihuo_zhanghao(bot, ev: CQEvent):
     args = ev.message.extract_plain_text()
     args = int(args)
     qqid = (await bot.get_login_info())['user_id']   
@@ -276,7 +285,7 @@ async def change_zhanghao(bot, ev: CQEvent):
            await bot.send(ev, '当前账号正在使用中，无需激活')
         else:
            qqlist.remove(args)
-           await bot.send(ev, f'{args}已激活，将进入自动切号列表')
+           await bot.send(ev, f'{args}已激活，将进入待切号序列')
 
 @sucmd("reload-session1", force_private=False, aliases=("重启切号", "重载切号"))#完全重载，记录清除
 async def reload_session1(session: CommandSession):
@@ -292,3 +301,123 @@ async def reload_session1(session: CommandSession):
     except Exception as e:
         sv.logger.exception(e)
         await session.send(f"Error: {type(e)}")
+
+
+@sv.on_suffix(('账号列表','帐号列表'))
+async def list_help(bot, ev):
+    image = Image.open(os.path.join(os.path.dirname(__file__),f"list.png")).convert('RGB')
+    draw= ImageDraw.Draw(image) #建立一个绘图的对象
+    font = ImageFont.truetype(os.path.join(os.path.dirname(__file__),f"081.ttf"), 85)
+    font2 = ImageFont.truetype(os.path.join(os.path.dirname(__file__),f"081.ttf"), 70)
+    mask = Image.open(os.path.join(os.path.dirname(__file__),f'mask.png')).convert('RGBA') # 蒙板 
+    accounts = config_test(file_config).get('list') 
+    if len(accounts)>7:
+            msg='账号列表如下：\n'
+            for account in accounts:
+                qq=account['qq']
+                msg+=str(qq)+'\n'
+            msg+='已用账号如下\n'
+            for qqid in qqlist:
+                msg+=str(qqid)+'\n'
+            qqid = (await bot.get_login_info())['user_id'] 
+            msg+='已用过的不会进入自动换号列表\n激活账号：移出已用列表\n移除账号：移入已用列表\n切换账号：主动，原号移入已用\n当前账号为'+str(qqid)
+            await bot.send(ev, msg)
+            return
+    qqid_now = (await bot.get_login_info())['user_id']    
+    n=0  
+    r=70                                          
+    for account in accounts:
+           name=await get_user_info(bot,ev, account['qq'])
+           img = await download_avatar(account['qq'])
+           if img:
+              qq_img=await qqimg(img,mask)
+              rs, g, b, a = qq_img.split()
+           text1=str(account['qq'])
+           if account['qq'] in qqlist and account['qq']!=qqid_now:
+              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#d9526b')#红
+              draw.text((138,752+278*n), '已用', font=font2, fill="#ffffff") 
+              draw.text((340,715+278*n), text1, font=font, fill="#d9526b") 
+              draw.text((340,800+278*n), name, font=font2, fill="#000000") 
+           elif account['qq'] == qqid_now:
+              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#359ee8')#蓝
+              draw.text((138,752+278*n), '当前', font=font2, fill="#ffffff")
+              draw.text((340,715+278*n), text1, font=font, fill="#359ee8") 
+              draw.text((340,800+278*n), name, font=font2, fill="#000000") 
+           else:
+              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#27cb93')#绿
+              draw.text((138,752+278*n), '可用', font=font2, fill="#ffffff") 
+              draw.text((340,715+278*n), text1, font=font, fill="#27cb93") 
+              draw.text((340,800+278*n), name, font=font2, fill="#000000") 
+
+           n+=1
+    image.save(os.path.join(os.path.dirname(__file__),f"list2.jpg"))
+    list2=os.path.join(os.path.dirname(__file__),f"list2.jpg")
+    await bot.send(ev, CommandSession.image(f'file:///{list2}'))
+
+
+
+
+async def get_user_info(bot: HoshinoBot,ev, user):
+    if not user:
+        return
+    try:
+      info = await bot.get_group_member_info(self_id=ev.self_id, group_id=ev.group_id, user_id=int(user)) 
+      name = info.get("card", "") or info.get("nickname", "")
+    except Exception as e:
+      name='未知昵称'
+    return(name)
+
+
+@cached(ttl=60)
+async def download_avatar(user_id: str) -> bytes:
+    url = f"http://q1.qlogo.cn/g?b=qq&nk={user_id}&s=640"
+    data = await download_url(url)
+    if not data or hashlib.md5(data).hexdigest() == "acef72340ac0e914090bd35799f5594e":
+        url = f"http://q1.qlogo.cn/g?b=qq&nk={user_id}&s=100"
+        data = await download_url(url)
+        if not data:
+            raise DownloadError
+    return data
+
+async def download_url(url: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        for i in range(3):
+            try:
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                return resp.content
+            except Exception as e:
+                # sv.logger.warning(f"Error downloading {url}, retry {i}/3: {e}")
+                print(f"Error downloading {url}, retry {i}/3: {str(e)}")
+    raise DownloadError
+
+class DownloadError(Exception):
+    pass
+
+async def qqimg(bg,mask):
+    x, y = 0, 0
+    bg = to_image(bg)# 背景图
+    bg = bg.resize((450, 212))
+    mask_size = mask.size 
+    crop = bg.crop((x, y, x + mask_size[0], y + mask_size[1]))
+    m2 = Image.new('RGBA', mask.size) 
+    m2.paste(crop, mask=mask)
+    return m2
+
+
+def to_image(data: bytes) -> Image:
+    image = Image.open(BytesIO(data))
+    image = to_jpg(image).convert("RGBA")
+    return image
+
+def to_jpg(frame: Image, bg_color=(255, 255, 255)) -> Image:
+    if frame.mode == "RGBA":
+        bg = Image.new("RGB", frame.size, bg_color)
+        bg.paste(frame, mask=frame.split()[3])
+        return bg
+    else:
+        return frame.convert("RGB")
