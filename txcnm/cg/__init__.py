@@ -106,12 +106,12 @@ async def get_last_log(accounts,qqid,filename):
             if account_flag==1:
                   #print(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
                   account_flag=0
-                  await asyncio.sleep(30)
+                  await asyncio.sleep(10)
                   await report_to_su(f'原账号{qq_original}已被风控/冻结，现已切换至qq{qqid}')
             if account_flag==2:
                   #print(f'原账号{qq_original}已主动切换至qq{qqid}')
                   account_flag=0
-                  await asyncio.sleep(30)
+                  await asyncio.sleep(10)
                   await report_to_su(f'原账号{qq_original}已主动切换至qq{qqid}')
             while os.path.isfile(filename)!=True:             #如果过了一天，gocq没有新消息是不会出新的log的
                    sv.logger.info(f"尝试更新今天的日志")
@@ -334,19 +334,19 @@ async def list_help(bot, ev):
               rs, g, b, a = qq_img.split()
            text1=str(account['qq'])
            if account['qq'] in qqlist and account['qq']!=qqid_now:
-              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#d9526b')#红
               draw.text((138,752+278*n), '已用', font=font2, fill="#ffffff") 
               draw.text((340,715+278*n), text1, font=font, fill="#d9526b") 
               draw.text((340,800+278*n), name, font=font2, fill="#000000") 
            elif account['qq'] == qqid_now:
-              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#359ee8')#蓝
               draw.text((138,752+278*n), '当前', font=font2, fill="#ffffff")
               draw.text((340,715+278*n), text1, font=font, fill="#359ee8") 
               draw.text((340,800+278*n), name, font=font2, fill="#000000") 
            else:
-              image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
+              if img:image.paste(qq_img,(697,692+278*n,1147,904+278*n),mask=a)
               draw.ellipse((200-r, 790+278*n-r, 200+r, 790+278*n+r), fill='#27cb93')#绿
               draw.text((138,752+278*n), '可用', font=font2, fill="#ffffff") 
               draw.text((340,715+278*n), text1, font=font, fill="#27cb93") 
