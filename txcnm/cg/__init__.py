@@ -147,8 +147,12 @@ async def get_last_log(accounts,qqid,filename):
                             file_cursor_flag = f.tell()  # 记录当前指针的位置
                             sv.logger.info(f"初始化已完成,指针的位置：{file_cursor_flag}")
                         file_cursor_flag = f.tell()  # 记录当前指针的位置
-                        break
-                    await asyncio.sleep(0.1)
+                        break           
+        if 'There is not enough space on the disk'in last_line_flag and '收到群' not in last_line_flag: #这里的最后一行是真最后一行
+              sv.logger.info("硬盘怎么满了")
+              await report_to_su(f'硬盘已满，赶紧上去清')
+              await asyncio.sleep(600)
+              break
         if '[FATAL]: 账号被冻结'in last_line_flag and '收到群' not in last_line_flag: #这里的最后一行是真最后一行
               sv.logger.info("tx我cnm,账号怎么被冻结了")
               await huanhao(accounts,qqid)
